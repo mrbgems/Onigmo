@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [master]
+  workflow_dispatch:
   pull_request:
 
 permissions:
@@ -27,3 +28,18 @@ jobs:
         run: make
       - name: Test
         run: make check
+
+  asan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install autotools
+        run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool ruby
+      - name: Configure with AddressSanitizer
+        run: |
+          ./autogen.sh
+          ./configure CC=gcc CFLAGS="-g -O1 -fno-omit-frame-pointer -fsanitize=address" LDFLAGS="-fsanitize=address"
+      - name: Build
+        run: make
+      - name: Test
+        run: make test
