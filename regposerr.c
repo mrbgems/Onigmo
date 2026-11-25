@@ -74,7 +74,7 @@ static const char* ESTRING[] = {
 
 
 extern size_t
-posix_regerror_impl(int posix_ecode, const regex_t* reg ARG_UNUSED, char* buf,
+regerror(int posix_ecode, const regex_t* reg ARG_UNUSED, char* buf,
 	 size_t size)
 {
   const char* s;
@@ -100,16 +100,4 @@ posix_regerror_impl(int posix_ecode, const regex_t* reg ARG_UNUSED, char* buf,
     buf[size - 1] = '\0';
   }
   return len;
-}
-
-size_t
-regerror(int posix_ecode, const regex_t* reg, char* buf, size_t size)
-{
-  return posix_regerror_impl(posix_ecode, reg, buf, size);
-}
-
-size_t
-onig_regerror(int posix_ecode, const regex_t* reg, char* buf, size_t size)
-{
-  return posix_regerror_impl(posix_ecode, reg, buf, size);
 }

@@ -68,17 +68,17 @@ static void xx(char* pattern, char* str, int from, int to, int mem, int not)
   uconv(pattern, cpat, ulen(pattern));
   uconv(str,     cstr, ulen(str));
 
-  r = onig_regcomp(&reg, pattern, REG_EXTENDED | REG_NEWLINE);
+  r = regcomp(&reg, pattern, REG_EXTENDED | REG_NEWLINE);
   if (r) {
-    onig_regerror(r, &reg, buf, sizeof(buf));
+    regerror(r, &reg, buf, sizeof(buf));
     fprintf(err_file, "ERROR: %s\n", buf);
     nerror++;
     return ;
   }
 
-  r = onig_regexec(&reg, str, reg.re_nsub + 1, pmatch, 0);
+  r = regexec(&reg, str, reg.re_nsub + 1, pmatch, 0);
   if (r != 0 && r != REG_NOMATCH) {
-    onig_regerror(r, &reg, buf, sizeof(buf));
+    regerror(r, &reg, buf, sizeof(buf));
     fprintf(err_file, "ERROR: %s\n", buf);
     nerror++;
     return ;
@@ -111,7 +111,7 @@ static void xx(char* pattern, char* str, int from, int to, int mem, int not)
       }
     }
   }
-  onig_regfree(&reg);
+  regfree(&reg);
 
 #else
   regex_t* reg;

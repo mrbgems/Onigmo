@@ -85,6 +85,10 @@ typedef struct {
   void*   onig;          /* Oniguruma regex_t*  */
   size_t  re_nsub;
   int     comp_options;
+  /* Pad to glibc's regex_t size (64 bytes on x86-64 Linux). AddressSanitizer's
+     regcomp/regexec/regerror/regfree interceptors assume that size and report
+     the library's writes as overflows when the struct is smaller. */
+  char    reserved[64 - sizeof(void*) - sizeof(size_t) - sizeof(int)];
 } regex_t;
 
 
@@ -147,14 +151,8 @@ ONIG_EXTERN int onig_end(void);
 
 ONIG_EXTERN int    regcomp(regex_t* reg, const char* pat, int options);
 ONIG_EXTERN int    regexec(regex_t* reg, const char* str, size_t nmatch, regmatch_t* matches, int options);
-ONIG_EXTERN int    onig_regcomp(regex_t* reg, const char* pat, int options);
-ONIG_EXTERN int    onig_regexec(regex_t* reg, const char* str, size_t nmatch, regmatch_t* matches, int options);
-ONIG_EXTERN int    onig_regcomp(regex_t* reg, const char* pat, int options);
-ONIG_EXTERN int    onig_regexec(regex_t* reg, const char* str, size_t nmatch, regmatch_t* matches, int options);
 ONIG_EXTERN void   regfree(regex_t* reg);
-ONIG_EXTERN void   onig_regfree(regex_t* reg);
 ONIG_EXTERN size_t regerror(int code, const regex_t* reg, char* buf, size_t size);
-ONIG_EXTERN size_t onig_regerror(int code, const regex_t* reg, char* buf, size_t size);
 
 /* extended API */
 ONIG_EXTERN void reg_set_encoding(int enc);

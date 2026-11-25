@@ -130,8 +130,8 @@ onig2posix_error_code(int code)
   return REG_EONIG_INTERNAL;  /* but, unknown error code */
 }
 
-static int
-posix_regcomp_impl(regex_t* reg, const char* pattern, int posix_options)
+extern int
+regcomp(regex_t* reg, const char* pattern, int posix_options)
 {
   int r, len;
   const OnigSyntaxType* syntax = OnigDefaultSyntax;
@@ -162,8 +162,8 @@ posix_regcomp_impl(regex_t* reg, const char* pattern, int posix_options)
   return 0;
 }
 
-static int
-posix_regexec_impl(regex_t* reg, const char* str, size_t nmatch,
+extern int
+regexec(regex_t* reg, const char* str, size_t nmatch,
 	regmatch_t pmatch[], int posix_options)
 {
   int r, i, len;
@@ -216,8 +216,8 @@ posix_regexec_impl(regex_t* reg, const char* str, size_t nmatch,
   return r;
 }
 
-static void
-posix_regfree_impl(regex_t* reg)
+extern void
+regfree(regex_t* reg)
 {
   onig_free(ONIG_C(reg));
 }
@@ -296,46 +296,4 @@ extern int
 reg_number_of_names(regex_t* reg)
 {
   return onig_number_of_names(ONIG_C(reg));
-}
-
-/* Exported under onig_ names as well. AddressSanitizer intercepts the
-   libc names regcomp and regexec and checks them against glibc's
-   regex_t, which is larger than this library's, so callers that link
-   against the aliases avoid that false positive. */
-int
-regcomp(regex_t* reg, const char* pattern, int posix_options)
-{
-  return posix_regcomp_impl(reg, pattern, posix_options);
-}
-
-int
-onig_regcomp(regex_t* reg, const char* pattern, int posix_options)
-{
-  return posix_regcomp_impl(reg, pattern, posix_options);
-}
-
-int
-regexec(regex_t* reg, const char* str, size_t nmatch,
-	regmatch_t pmatch[], int posix_options)
-{
-  return posix_regexec_impl(reg, str, nmatch, pmatch, posix_options);
-}
-
-int
-onig_regexec(regex_t* reg, const char* str, size_t nmatch,
-	     regmatch_t pmatch[], int posix_options)
-{
-  return posix_regexec_impl(reg, str, nmatch, pmatch, posix_options);
-}
-
-void
-regfree(regex_t* reg)
-{
-  posix_regfree_impl(reg);
-}
-
-void
-onig_regfree(regex_t* reg)
-{
-  posix_regfree_impl(reg);
 }
