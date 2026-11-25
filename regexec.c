@@ -247,47 +247,45 @@ onig_region_clear(OnigRegion* region)
 extern int
 onig_region_resize(OnigRegion* region, int n)
 {
-  region->num_regs = n;
+  int num_regs = n;
 
   if (n < ONIG_NREGION)
     n = ONIG_NREGION;
 
   if (region->allocated == 0) {
     region->beg = (OnigPosition* )xmalloc(n * sizeof(OnigPosition));
-    if (region->beg == 0)
-      return ONIGERR_MEMORY;
-
     region->end = (OnigPosition* )xmalloc(n * sizeof(OnigPosition));
-    if (region->end == 0) {
-      xfree(region->beg);
-      return ONIGERR_MEMORY;
-    }
+    if (region->beg == 0 || region->end == 0)
+      goto mem_err;
 
     region->allocated = n;
   }
   else if (region->allocated < n) {
     OnigPosition *tmp;
 
-    region->allocated = 0;
     tmp = (OnigPosition* )xrealloc(region->beg, n * sizeof(OnigPosition));
-    if (tmp == 0) {
-      xfree(region->beg);
-      xfree(region->end);
-      return ONIGERR_MEMORY;
-    }
+    if (tmp == 0)
+      goto mem_err;
     region->beg = tmp;
     tmp = (OnigPosition* )xrealloc(region->end, n * sizeof(OnigPosition));
-    if (tmp == 0) {
-      xfree(region->beg);
-      xfree(region->end);
-      return ONIGERR_MEMORY;
-    }
+    if (tmp == 0)
+      goto mem_err;
     region->end = tmp;
 
     region->allocated = n;
   }
 
+  region->num_regs = num_regs;
   return 0;
+
+ mem_err:
+  xfree(region->beg);
+  xfree(region->end);
+  region->beg = 0;
+  region->end = 0;
+  region->allocated = 0;
+  region->num_regs = 0;
+  return ONIGERR_MEMORY;
 }
 
 static int
@@ -1136,6 +1134,7 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
   s2   = *ps2;
   end1 = s1 + mblen;
   while (s1 < end1) {
+    if (s2 >= text_end) return 0;
     len1 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s1, text_end, buf1);
     len2 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s2, text_end, buf2);
     if (len1 != len2) return 0;
@@ -2512,7 +2511,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       JUMP;
 
     CASE(OP_KEEP)  MOP_IN(OP_KEEP);
-      pkeep = s;
+      pkeep = (s < sstart) ? (UChar* )sstart : s;
       MOP_OUT;
       JUMP;
 
@@ -3239,6 +3238,7 @@ str_lower_case_match(OnigEncoding enc, int case_fold_flag,
 
   while (t < tend) {
     lowlen = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &p, end, lowbuf);
+    if (tend - t < lowlen) return 0;
     q = lowbuf;
     while (lowlen > 0) {
       if (*t++ != *q++)	return 0;
