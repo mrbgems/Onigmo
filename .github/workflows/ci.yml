@@ -44,6 +44,15 @@ jobs:
       - name: Build
         run: make
       - name: Test
-        # The Python test driver loads the sanitized library, so libasan must
-        # come first; leak detection is off because Python leaks at exit.
-        run: LD_PRELOAD="$(gcc -print-file-name=libasan.so)" ASAN_OPTIONS=detect_leaks=0 make test
+        # Link the POSIX programs against the static archive, with every
+        # member forced in. Then the executables define regcomp and regexec
+        # themselves, so AddressSanitizer's libc interceptors (which would
+        # call glibc on Onigmo's struct and deadlock) are not used. The
+        # Python driver loads the shared library, so libasan is preloaded
+        # first, and leak detection is off because Python leaks at exit.
+        run: |
+          A="-Wl,--whole-archive .libs/libonigmo.a -Wl,--no-whole-archive"
+          LD_PRELOAD="$(gcc -print-file-name=libasan.so)" ASAN_OPTIONS=detect_leaks=0 \
+            make test testc_LDADD="$A" testp_LDADD="$A" testcu_LDADD="$A" \
+            test_enc_utf8_LDADD="$A" \
+            LDADD="-Wl,--whole-archive ../.libs/libonigmo.a -Wl,--no-whole-archive"
