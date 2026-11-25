@@ -177,7 +177,7 @@ static const struct st_hash_type type_strcasehash = {
 #define MEMCPY(p1,p2,type,n)  memcpy((p1), (p2), sizeof(type)*(n))
 #endif /* RUBY */
 
-#define EQUAL(tab,x,y) ((x) == (y) || (*(tab)->type->compare)((x),(y)) == 0)
+#define EQUAL(tab,x,y) ((x) == (y) || ((int (*)(st_data_t, st_data_t))(tab)->type->compare)((x),(y)) == 0)
 #define PTR_EQUAL(tab, ptr, hash_val, key_) \
     ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
 
@@ -324,7 +324,7 @@ const st_hash_t st_reserved_hash_substitution_val = RESERVED_HASH_SUBSTITUTION_V
 static inline st_hash_t
 do_hash(st_data_t key, st_table *tab)
 {
-    st_hash_t hash = (st_hash_t)(tab->type->hash)(key);
+    st_hash_t hash = (st_hash_t)((st_index_t (*)(st_data_t))tab->type->hash)(key);
 
     /* RESERVED_HASH_VAL is used for a deleted entry.  Map it into
        another value.  Such mapping should be extremely rare.  */
@@ -1623,7 +1623,7 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func 
 	key = curr_entry_ptr->key;
 	rebuilds_num = tab->rebuilds_num;
 	hash = curr_entry_ptr->hash;
-	retval = (*func)(key, curr_entry_ptr->record, arg, 0);
+	retval = ((int (*)(st_data_t, st_data_t, st_data_t, int))func)(key, curr_entry_ptr->record, arg, 0);
 
         if (retval == ST_REPLACE && replace) {
             st_data_t value;
@@ -1652,7 +1652,7 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func 
 	    }
 	    if (error_p && check_p) {
 	        /* call func with error notice */
-	        retval = (*func)(0, 0, arg, 1);
+	        retval = ((int (*)(st_data_t, st_data_t, st_data_t, int))func)(0, 0, arg, 1);
 #ifdef ST_DEBUG
 		st_check(tab);
 #endif
