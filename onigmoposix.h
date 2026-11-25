@@ -85,6 +85,10 @@ typedef struct {
   void*   onig;          /* Oniguruma regex_t*  */
   size_t  re_nsub;
   int     comp_options;
+  /* Pad to glibc's regex_t size (64 bytes on x86-64 Linux). AddressSanitizer's
+     regcomp/regexec/regerror/regfree interceptors assume that size and report
+     the library's writes as overflows when the struct is smaller. */
+  char    reserved[64 - sizeof(void*) - sizeof(size_t) - sizeof(int)];
 } regex_t;
 
 
