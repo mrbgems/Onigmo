@@ -45,7 +45,11 @@ typedef unsigned LONG_LONG st_data_t;
 # define _(args) args
 #endif
 #ifndef ANYARGS
-# define ANYARGS ...
+# ifdef __cplusplus
+#   define ANYARGS ...
+# else
+#   define ANYARGS
+# endif
 #endif
 
 typedef struct st_table st_table;
