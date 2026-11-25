@@ -42,4 +42,6 @@ jobs:
       - name: Build
         run: make
       - name: Test
-        run: make test
+        # The Python test driver loads the sanitized library, so libasan must
+        # come first; leak detection is off because Python leaks at exit.
+        run: LD_PRELOAD="$(gcc -print-file-name=libasan.so)" ASAN_OPTIONS=detect_leaks=0 make test

@@ -12,9 +12,9 @@ static int x(regex_t* reg, unsigned char* pattern, unsigned char* str)
   char buf[200];
   regmatch_t pmatch[20];
 
-  r = regexec(reg, (char* )str, reg->re_nsub + 1, pmatch, 0);
+  r = onig_regexec(reg, (char* )str, reg->re_nsub + 1, pmatch, 0);
   if (r != 0 && r != REG_NOMATCH) {
-    regerror(r, reg, buf, sizeof(buf));
+    onig_regerror(r, reg, buf, sizeof(buf));
     fprintf(stderr, "ERROR: %s\n", buf);
     return -1;
   }
@@ -40,9 +40,9 @@ extern int main(int argc, char* argv[])
 
   /* default syntax (ONIG_SYNTAX_RUBY) */
   pattern = (UChar* )"^a+b{2,7}[c-f]?$|uuu";
-  r = regcomp(&reg, (char* )pattern, REG_EXTENDED);
+  r = onig_regcomp(&reg, (char* )pattern, REG_EXTENDED);
   if (r) {
-    regerror(r, &reg, buf, sizeof(buf));
+    onig_regerror(r, &reg, buf, sizeof(buf));
     fprintf(stderr, "ERROR: %s\n", buf);
     return -1;
   }
@@ -50,9 +50,9 @@ extern int main(int argc, char* argv[])
 
   /* POSIX Basic RE (REG_EXTENDED is not specified.) */
   pattern = (UChar* )"^a+b{2,7}[c-f]?|uuu";
-  r = regcomp(&reg, (char* )pattern, 0);
+  r = onig_regcomp(&reg, (char* )pattern, 0);
   if (r) {
-    regerror(r, &reg, buf, sizeof(buf));
+    onig_regerror(r, &reg, buf, sizeof(buf));
     fprintf(stderr, "ERROR: %s\n", buf);
     return -1;
   }
@@ -60,9 +60,9 @@ extern int main(int argc, char* argv[])
 
   /* POSIX Basic RE (REG_EXTENDED is not specified.) */
   pattern = (UChar* )"^a*b\\{2,7\\}\\([c-f]\\)$";
-  r = regcomp(&reg, (char* )pattern, 0);
+  r = onig_regcomp(&reg, (char* )pattern, 0);
   if (r) {
-    regerror(r, &reg, buf, sizeof(buf));
+    onig_regerror(r, &reg, buf, sizeof(buf));
     fprintf(stderr, "ERROR: %s\n", buf);
     return -1;
   }
@@ -71,18 +71,18 @@ extern int main(int argc, char* argv[])
   /* POSIX Extended RE */
   onig_set_default_syntax(ONIG_SYNTAX_POSIX_EXTENDED);
   pattern = (UChar* )"^a+b{2,7}[c-f]?)$|uuu";
-  r = regcomp(&reg, (char* )pattern, REG_EXTENDED);
+  r = onig_regcomp(&reg, (char* )pattern, REG_EXTENDED);
   if (r) {
-    regerror(r, &reg, buf, sizeof(buf));
+    onig_regerror(r, &reg, buf, sizeof(buf));
     fprintf(stderr, "ERROR: %s\n", buf);
     return -1;
   }
   x(&reg, pattern, (UChar* )"aaabbbbd)");
 
   pattern = (UChar* )"^b.";
-  r = regcomp(&reg, (char* )pattern, REG_EXTENDED | REG_NEWLINE);
+  r = onig_regcomp(&reg, (char* )pattern, REG_EXTENDED | REG_NEWLINE);
   if (r) {
-    regerror(r, &reg, buf, sizeof(buf));
+    onig_regerror(r, &reg, buf, sizeof(buf));
     fprintf(stderr, "ERROR: %s\n", buf);
     return -1;
   }
@@ -90,12 +90,12 @@ extern int main(int argc, char* argv[])
 
   /* Error test */
   pattern = (UChar* )" [";
-  r = regcomp(&reg, (char* )pattern, REG_EXTENDED);
+  r = onig_regcomp(&reg, (char* )pattern, REG_EXTENDED);
   if (r) {
-    regerror(r, &reg, buf, sizeof(buf));
+    onig_regerror(r, &reg, buf, sizeof(buf));
     fprintf(stderr, "OK(E): %s\n", buf);
   }
 
-  regfree(&reg);
+  onig_regfree(&reg);
   return 0;
 }

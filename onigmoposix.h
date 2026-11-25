@@ -147,8 +147,14 @@ ONIG_EXTERN int onig_end(void);
 
 ONIG_EXTERN int    regcomp(regex_t* reg, const char* pat, int options);
 ONIG_EXTERN int    regexec(regex_t* reg, const char* str, size_t nmatch, regmatch_t* matches, int options);
+ONIG_EXTERN int    onig_regcomp(regex_t* reg, const char* pat, int options);
+ONIG_EXTERN int    onig_regexec(regex_t* reg, const char* str, size_t nmatch, regmatch_t* matches, int options);
+ONIG_EXTERN int    onig_regcomp(regex_t* reg, const char* pat, int options);
+ONIG_EXTERN int    onig_regexec(regex_t* reg, const char* str, size_t nmatch, regmatch_t* matches, int options);
 ONIG_EXTERN void   regfree(regex_t* reg);
+ONIG_EXTERN void   onig_regfree(regex_t* reg);
 ONIG_EXTERN size_t regerror(int code, const regex_t* reg, char* buf, size_t size);
+ONIG_EXTERN size_t onig_regerror(int code, const regex_t* reg, char* buf, size_t size);
 
 /* extended API */
 ONIG_EXTERN void reg_set_encoding(int enc);
