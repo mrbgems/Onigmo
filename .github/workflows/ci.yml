@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -32,7 +32,7 @@ jobs:
 
   asan:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Install autotools
@@ -54,5 +54,4 @@ jobs:
           A="-Wl,--whole-archive .libs/libonigmo.a -Wl,--no-whole-archive"
           LD_PRELOAD="$(gcc -print-file-name=libasan.so)" ASAN_OPTIONS=detect_leaks=0 \
             make test testc_LDADD="$A" testp_LDADD="$A" testcu_LDADD="$A" \
-            test_enc_utf8_LDADD="$A" \
-            LDADD="-Wl,--whole-archive ../.libs/libonigmo.a -Wl,--no-whole-archive"
+            test_enc_utf8_LDADD="$A"
