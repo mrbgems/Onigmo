@@ -27,7 +27,7 @@ jobs:
       - name: Build
         run: make
       - name: Test
-        run: make check
+        run: make test
 
   asan:
     runs-on: ubuntu-latest

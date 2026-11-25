@@ -1426,7 +1426,8 @@ def main():
     x3("(a\\K)*", "aaab", 2, 3, 1)
 #    x2("a\\K?a", "aa", 0, 2)        # error: differ from perl
     x2("ab(?=c\Kd)", "abcd", 2, 2)          # This behaviour is currently not well defined. (see: perlre)
-    x2("(?<=a\\Kb|aa)cd", "abcd", 1, 4)     # This behaviour is currently not well defined. (see: perlre)
+    x2("(?<=a\\Kb|aa)cd", "abcd", 2, 4)     # This behaviour is currently not well defined. (see: perlre)
+                                             # \K is clamped to the match attempt position (ruby/ruby f5467b99d9).
     x2("(?<=ab|a\\Ka)cd", "abcd", 2, 4)     # This behaviour is currently not well defined. (see: perlre)
 
     # named group and subroutine call
