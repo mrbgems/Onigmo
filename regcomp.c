@@ -431,8 +431,12 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance byte_len
                           regex_t* reg ARG_UNUSED, int ignore_case)
 {
   int len;
-  int op = select_str_opcode(mb_len, byte_len, ignore_case);
+  int op;
 
+  if (byte_len > MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+
+  op = select_str_opcode(mb_len, byte_len, ignore_case);
   len = SIZE_OPCODE;
 
   if (op == OP_EXACTMBN)  len += SIZE_LENGTH;
@@ -489,10 +493,15 @@ compile_length_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, sn->end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+      if (r < 0) return r;
       rlen += r;
+      if (rlen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
       prev = p;
       blen = len;
       prev_len = len;
@@ -500,6 +509,7 @@ compile_length_string_node(Node* node, regex_t* reg)
     p += len;
   }
   r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+  if (r < 0) return r;
   rlen += r;
   return rlen;
 }
@@ -537,6 +547,8 @@ compile_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string(prev, prev_len, blen, reg, ambig);
@@ -1018,6 +1030,9 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
   else if (qn->upper == 0 && qn->is_referred != 0) { /* /(?<n>..){0}/ */
     len = SIZE_OP_JUMP + tlen;
   }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    len = 0;
+  }
   else if (!infinite && qn->greedy &&
            (qn->upper == 1 ||
             IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
@@ -1138,6 +1153,9 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     r = add_opcode_rel_addr(reg, OP_JUMP, tlen);
     if (r) return r;
     r = compile_tree(qn->target, reg);
+  }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    r = 0;
   }
   else if (!infinite && qn->greedy &&
            (qn->upper == 1 ||
@@ -4273,6 +4291,7 @@ typedef struct {
 typedef struct {
   int left_anchor;
   int right_anchor;
+  int head_asserts;
 } OptAncInfo;
 
 typedef struct {
@@ -4436,6 +4455,7 @@ clear_opt_anc_info(OptAncInfo* anc)
 {
   anc->left_anchor  = 0;
   anc->right_anchor = 0;
+  anc->head_asserts = 0;
 }
 
 static void
@@ -4450,9 +4470,18 @@ concat_opt_anc_info(OptAncInfo* to, OptAncInfo* left, OptAncInfo* right,
 {
   clear_opt_anc_info(to);
 
-  to->left_anchor = left->left_anchor;
+  to->left_anchor  = left->left_anchor;
+  to->head_asserts = left->head_asserts;
   if (left_len == 0) {
-    to->left_anchor |= right->left_anchor;
+    int right_left = right->left_anchor;
+
+    if ((left->head_asserts & ~ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_MASK;
+    else if ((left->head_asserts & ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_ML;
+
+    to->left_anchor  |= right_left;
+    to->head_asserts |= right->head_asserts;
   }
 
   to->right_anchor = right->right_anchor;
@@ -4506,6 +4535,7 @@ alt_merge_opt_anc_info(OptAncInfo* to, OptAncInfo* add)
 {
   to->left_anchor  &= add->left_anchor;
   to->right_anchor &= add->right_anchor;
+  to->head_asserts |= add->head_asserts;
 }
 
 static int
@@ -5028,6 +5058,10 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
     break;
 
   case NT_ANCHOR:
+    if ((NANCHOR(node)->type &
+         ~(ANCHOR_BEGIN_BUF | ANCHOR_BEGIN_POSITION | ANCHOR_KEEP)) != 0)
+      opt->anc.head_asserts |= NANCHOR(node)->type;
+
     switch (NANCHOR(node)->type) {
     case ANCHOR_BEGIN_BUF:
     case ANCHOR_BEGIN_POSITION:
@@ -5766,6 +5800,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   r = compile_tree(root, reg);
   if (r == 0) {
     r = add_opcode(reg, OP_END);
+    if (r != 0) goto err_unset;
 #ifdef USE_SUBEXP_CALL
     if (scan_env.num_call > 0) {
       r = unset_addr_list_fix(&uslist, reg);
